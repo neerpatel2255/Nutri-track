@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { MenuMode, MealSlot, Prisma } from '@prisma/client';
 
+import { MENU_ITEMS, WEEKLY_MENU } from '@/lib/menu-data';
 import { prisma } from '@/lib/prisma';
 
 export type MenuItemView = Prisma.MenuItemGetPayload<{
@@ -46,6 +47,57 @@ const mealLabels: Record<MealSlot, string> = {
   SNACKS: 'Snacks'
 };
 
+const mealSlotMap = {
+  breakfast: 'BREAKFAST',
+  lunch: 'LUNCH',
+  snacks: 'SNACKS',
+  dinner: 'DINNER'
+} as const;
+
+function formatDayLabel(day: string) {
+  return day.charAt(0).toUpperCase() + day.slice(1);
+}
+
+function inferSpicy(itemName: string) {
+  return /gravy|chettinad|chutney|rasam|biryani|chaat|korma|bhurji|pickle|podi|sambar|dal/i.test(itemName);
+}
+
+function buildSeedMenuItems(): Prisma.MenuItemCreateManyInput[] {
+  const rows: Prisma.MenuItemCreateManyInput[] = [];
+
+  for (const [dayKey, dayMenu] of Object.entries(WEEKLY_MENU)) {
+    const dayLabel = formatDayLabel(dayKey);
+
+    for (const mealKey of Object.keys(mealSlotMap) as Array<keyof typeof mealSlotMap>) {
+      const mealPlan = dayMenu[mealKey];
+      const mealSlot = mealSlotMap[mealKey] as MealSlot;
+      const uniqueItemIds = Array.from(new Set([...mealPlan.regular_menu, ...mealPlan.feast_menu]));
+
+      for (const itemId of uniqueItemIds) {
+        const item = MENU_ITEMS[itemId as keyof typeof MENU_ITEMS];
+        if (!item) {
+          continue;
+        }
+
+        rows.push({
+          dayLabel,
+          mealSlot,
+          title: item.name,
+          description: `${dayLabel} ${mealLabels[mealSlot]} menu item`,
+          calories: Math.round(item.calories),
+          protein: Math.round(item.protein),
+          carbs: Math.round(item.carbs),
+          fats: Math.round(item.fats),
+          vegetarian: item.type === 'veg',
+          spicy: inferSpicy(item.name)
+        });
+      }
+    }
+  }
+
+  return rows;
+}
+
 function computeAverageRating(ratings: Array<{ stars: number }>) {
   if (ratings.length === 0) {
     return 0;
@@ -56,85 +108,15 @@ function computeAverageRating(ratings: Array<{ stars: number }>) {
 }
 
 export async function ensureSeedData() {
+  const menuItems = buildSeedMenuItems();
   const count = await prisma.menuItem.count();
-  if (count > 0) {
+  if (count >= menuItems.length) {
     return;
   }
 
-  const menuItems = [
-    {
-      dayLabel: 'Today',
-      mealSlot: 'BREAKFAST' as MealSlot,
-      title: 'Masala Oats with Fruit Bowl',
-      description: 'Warm oats with vegetables, roasted seeds, and fresh seasonal fruit.',
-      calories: 320,
-      protein: 13,
-      carbs: 42,
-      fats: 10,
-      vegetarian: true,
-      spicy: false
-    },
-    {
-      dayLabel: 'Today',
-      mealSlot: 'LUNCH' as MealSlot,
-      title: 'Rice, Dal Tadka, Paneer Bhurji',
-      description: 'Balanced lunch plate with lentils, spiced cottage cheese, and salad.',
-      calories: 620,
-      protein: 28,
-      carbs: 74,
-      fats: 22,
-      vegetarian: true,
-      spicy: true
-    },
-    {
-      dayLabel: 'Today',
-      mealSlot: 'LUNCH' as MealSlot,
-      title: 'Chicken Curry Thali',
-      description: 'Protein-rich curry with rice, cucumber raita, and roasted papad.',
-      calories: 690,
-      protein: 34,
-      carbs: 68,
-      fats: 26,
-      vegetarian: false,
-      spicy: true
-    },
-    {
-      dayLabel: 'Today',
-      mealSlot: 'DINNER' as MealSlot,
-      title: 'Chapati, Veg Korma, Curd',
-      description: 'Comfort dinner with whole wheat rotis and a mild mixed vegetable curry.',
-      calories: 560,
-      protein: 18,
-      carbs: 66,
-      fats: 20,
-      vegetarian: true,
-      spicy: false
-    },
-    {
-      dayLabel: 'Today',
-      mealSlot: 'SNACKS' as MealSlot,
-      title: 'Sprout Chaat and Tea',
-      description: 'Evening snack with high fiber sprouts, onions, lemon, and masala tea.',
-      calories: 210,
-      protein: 11,
-      carbs: 23,
-      fats: 6,
-      vegetarian: true,
-      spicy: true
-    },
-    {
-      dayLabel: 'Today',
-      mealSlot: 'SNACKS' as MealSlot,
-      title: 'Fruit Custard Cup',
-      description: 'Light sweet option for students who want a low-spice evening bite.',
-      calories: 180,
-      protein: 5,
-      carbs: 29,
-      fats: 5,
-      vegetarian: true,
-      spicy: false
-    }
-  ];
+  await prisma.rating.deleteMany();
+  await prisma.preference.deleteMany();
+  await prisma.menuItem.deleteMany();
 
   await prisma.menuItem.createMany({ data: menuItems });
 
@@ -145,9 +127,7 @@ export async function ensureSeedData() {
     },
     orderBy: { id: 'asc' }
   });
-  const itemByTitle = new Map<string, { id: number; title: string }>(
-    savedMenuItems.map((item) => [item.title, item])
-  );
+  const topRatedCandidates = savedMenuItems.slice(0, 4);
 
   await prisma.preference.createMany({
     data: [
@@ -177,28 +157,30 @@ export async function ensureSeedData() {
       {
         studentName: 'Aarav',
         stars: 5,
-        feedback: 'Best breakfast this week.',
-        menuItemId: itemByTitle.get('Masala Oats with Fruit Bowl')!.id
+        feedback: 'Breakfast options are fresh and filling.',
+        menuItemId: topRatedCandidates[0]?.id
       },
       {
         studentName: 'Sara',
         stars: 4,
-        feedback: 'Paneer was well cooked and filling.',
-        menuItemId: itemByTitle.get('Rice, Dal Tadka, Paneer Bhurji')!.id
+        feedback: 'Lunch had good variety.',
+        menuItemId: topRatedCandidates[1]?.id
       },
       {
         studentName: 'Rohan',
         stars: 5,
-        feedback: 'Sprouts were fresh and not too oily.',
-        menuItemId: itemByTitle.get('Sprout Chaat and Tea')!.id
+        feedback: 'Snacks are light but energetic.',
+        menuItemId: topRatedCandidates[2]?.id
       },
       {
         studentName: 'Meera',
         stars: 3,
-        feedback: 'Dinner was good but needed more spice.',
-        menuItemId: itemByTitle.get('Chapati, Veg Korma, Curd')!.id
+        feedback: 'Dinner was okay, needs a bit more spice.',
+        menuItemId: topRatedCandidates[3]?.id
       }
-    ]
+    ].filter((entry): entry is { studentName: string; stars: number; feedback: string; menuItemId: number } =>
+      typeof entry.menuItemId === 'number'
+    )
   });
 }
 
