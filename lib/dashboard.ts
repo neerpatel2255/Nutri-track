@@ -58,6 +58,13 @@ function formatDayLabel(day: string) {
   return day.charAt(0).toUpperCase() + day.slice(1);
 }
 
+function getTodayDayLabel() {
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    timeZone: 'Asia/Kolkata'
+  }).format(new Date());
+}
+
 function inferSpicy(itemName: string) {
   return /gravy|chettinad|chutney|rasam|biryani|chaat|korma|bhurji|pickle|podi|sambar|dal/i.test(itemName);
 }
@@ -187,8 +194,13 @@ export async function ensureSeedData() {
 export async function getDashboardData(): Promise<DashboardData> {
   await ensureSeedData();
 
-  const [menuItems, preferences] = await Promise.all([
+  const todayDayLabel = getTodayDayLabel();
+
+  const [todayMenuItems, preferences] = await Promise.all([
     prisma.menuItem.findMany({
+      where: {
+        dayLabel: todayDayLabel
+      },
       include: {
         ratings: true
       },
@@ -196,6 +208,43 @@ export async function getDashboardData(): Promise<DashboardData> {
     }),
     prisma.preference.findMany({ orderBy: { createdAt: 'desc' } })
   ]);
+
+  let menuItems = todayMenuItems;
+
+  if (menuItems.length === 0) {
+    menuItems = await prisma.menuItem.findMany({
+      where: {
+        dayLabel: 'Today'
+      },
+      include: {
+        ratings: true
+      },
+      orderBy: [{ mealSlot: 'asc' }, { id: 'asc' }]
+    });
+  }
+
+  if (menuItems.length === 0) {
+    const fallbackDay = await prisma.menuItem.findFirst({
+      select: {
+        dayLabel: true
+      },
+      orderBy: {
+        id: 'asc'
+      }
+    });
+
+    if (fallbackDay) {
+      menuItems = await prisma.menuItem.findMany({
+        where: {
+          dayLabel: fallbackDay.dayLabel
+        },
+        include: {
+          ratings: true
+        },
+        orderBy: [{ mealSlot: 'asc' }, { id: 'asc' }]
+      });
+    }
+  }
 
   const menuWithRatings: MenuItemView[] = menuItems.map((item) => ({
     ...item,
