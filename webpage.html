@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriTrack Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind Configuration for Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Scrollbar Styles with Dark Mode Support */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        html.dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4b5563;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans p-4 md:p-8 transition-colors duration-300 bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    
+    <div class="max-w-7xl mx-auto">
+        <!-- Section 4: Top Navigation -->
+        <div class="flex items-center justify-between p-4 shadow-sm rounded-xl mb-6 transition-colors bg-white dark:bg-gray-800">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                    NutriTrack
+                </h1>
+                <!-- Navigation Options -->
+                <div class="hidden md:flex space-x-2 ml-6 border-l pl-6 border-gray-200 dark:border-gray-700">
+                    <button class="px-4 py-1.5 rounded-full font-medium text-sm transition-colors bg-emerald-50 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">Home</button>
+                    <button class="px-4 py-1.5 rounded-full font-medium text-sm transition-colors text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">Rate/Feedback</button>
+                    <button class="px-4 py-1.5 rounded-full font-medium text-sm transition-colors text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">Preference</button>
+                    <button class="px-4 py-1.5 rounded-full font-medium text-sm transition-colors text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">Your Profile</button>
+                </div>
+            </div>
+            
+            <!-- Theme Switcher -->
+            <div class="flex items-center space-x-2 p-1 rounded-lg bg-gray-100 dark:bg-gray-700">
+                <button 
+                    id="theme-btn"
+                    onclick="toggleTheme()" 
+                    class="p-2 rounded-md transition-all bg-white shadow text-gray-800 dark:bg-gray-600 dark:shadow-none dark:text-yellow-400" 
+                    title="Toggle Theme"
+                >
+                    <i data-lucide="moon" class="w-[18px] h-[18px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Fixed Split Screen Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 h-full min-h-[600px] transition-all duration-500 ease-in-out">
+            <div class="md:col-span-4 flex flex-col space-y-6">
+                <!-- Section 2: Fitness Goals -->
+                <div class="h-48 shrink-0">
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden h-full flex flex-col justify-center">
+                        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-emerald-500 rounded-full opacity-20 blur-2xl"></div>
+                        
+                        <div class="flex justify-between items-start mb-6 relative z-10">
+                            <div>
+                                <p class="text-gray-400 text-sm font-medium mb-1 uppercase tracking-wider">Current Goal</p>
+                                <h2 id="goal-title" class="text-2xl font-bold flex items-center">
+                                    <i data-lucide="target" class="mr-2 text-emerald-400 w-6 h-6"></i>
+                                </h2>
+                            </div>
+                            <div class="bg-white/10 px-3 py-1.5 rounded-full flex items-center backdrop-blur-sm">
+                                <i id="flame-icon" data-lucide="flame" class="mr-1.5 text-gray-400 w-4 h-4"></i>
+                                <span id="streak-counter" class="font-bold"></span>
+                            </div>
+                        </div>
+
+                        <div class="relative z-10 mt-auto">
+                            <div class="flex justify-between text-sm mb-2 font-medium">
+                                <span class="text-emerald-400">Progress</span>
+                                <span id="progress-text"></span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-3 mb-1 overflow-hidden">
+                                <div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-3 rounded-full transition-all duration-1000 ease-out"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Schedule / Menu -->
+                <div class="flex-1 overflow-hidden">
+                    <div class="rounded-2xl p-6 shadow-sm border h-full flex flex-col transition-colors bg-white border-gray-100 text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
+                        <div class="flex p-1 rounded-xl mb-6 bg-gray-100 dark:bg-gray-900">
+                            <button 
+                                id="btn-today"
+                                onclick="setMenuTab('today')"
+                                class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all"
+                            >
+                                Today's Menu
+                            </button>
+                            <button 
+                                id="btn-weekly"
+                                onclick="setMenuTab('weekly')"
+                                class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all"
+                            >
+                                Weekly Overview
+                            </button>
+                        </div>
+                        <div id="menu-content" class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                            <!-- Dynamic Menu Content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="md:col-span-8 h-full">
+                <!-- Section 3: Main Action Plan -->
+                <div class="rounded-2xl p-6 shadow-sm border h-full flex flex-col relative overflow-hidden transition-colors bg-white border-emerald-100 dark:bg-gray-800 dark:border-emerald-900">
+                    
+                    <div id="perfect-day-banner" class="hidden absolute top-0 left-0 w-full h-1 bg-emerald-500"></div>
+                    
+                    <div class="mb-6 flex justify-between items-end">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Action Plan</h2>
+                            <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Eat these specific quantities to hit your goals today.</p>
+                        </div>
+                        <div class="text-right hidden sm:block">
+                            <p class="text-xs font-medium uppercase mb-1 text-gray-400 dark:text-gray-500">Status</p>
+                            <div id="status-container">
+                                <!-- Dynamic Status Badge -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="action-plan-content" class="space-y-4 flex-1">
+                        <!-- Dynamic Action Items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Footer Quote -->
+        <div class="mt-8 text-center p-6 border-t border-gray-200 dark:border-gray-800">
+            <p id="quote-text" class="italic text-sm md:text-base max-w-2xl mx-auto text-gray-400 dark:text-gray-500">
+                <!-- Quote injected by JS -->
+            </p>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- MOCK DATA ---
+        const GOAL_DATA = {
+            title: "Muscle Gain",
+            daysCompleted: 28,
+            totalDays: 30,
+            currentStreak: 5,
+        };
+
+        const WEEKLY_MENU = {
+            Monday: { Breakfast: "Oatmeal & Berries", Lunch: "Tuna Salad", Snacks: "Apple & Peanut Butter", Dinner: "Grilled Chicken & Rice" },
+            Tuesday: { Breakfast: "Scrambled Eggs", Lunch: "Turkey Wrap", Snacks: "Protein Shake", Dinner: "Beef Stir-fry" },
+            Wednesday: { Breakfast: "Greek Yogurt & Nuts", Lunch: "Chicken Breast & Broccoli", Snacks: "Almonds & Banana", Dinner: "Salmon & Sweet Potato" },
+            Thursday: { Breakfast: "Protein Pancakes", Lunch: "Quinoa Bowl", Snacks: "Cottage Cheese", Dinner: "Shrimp Pasta" },
+            Friday: { Breakfast: "Smoothie Bowl", Lunch: "Chicken Salad", Snacks: "Edamame", Dinner: "Steak & Asparagus" },
+            Saturday: { Breakfast: "Avocado Toast", Lunch: "Sushi", Snacks: "Protein Bar", Dinner: "Cheat Meal (Pizza)" },
+            Sunday: { Breakfast: "Omelette", Lunch: "Roast Chicken", Snacks: "Fruit Salad", Dinner: "Lentil Soup" }
+        };
+
+        const TODAY = "Wednesday";
+
+        const RECOMMENDATIONS = [
+            { id: 1, meal: "Breakfast", item: "Greek Yogurt & Nuts", baseQuantity: "1 bowl", calories: 350, proteins: "20g", fats: "15g", carbs: "30g" },
+            { id: 2, meal: "Lunch", item: "Chicken Breast", baseQuantity: "1 plate", calories: 400, proteins: "45g", fats: "10g", carbs: "5g" },
+            { id: 3, meal: "Snacks", item: "Banana & Almonds", baseQuantity: "1 handful", calories: 220, proteins: "6g", fats: "14g", carbs: "25g" },
+            { id: 4, meal: "Dinner", item: "Salmon & Sweet Potato", baseQuantity: "1 serving", calories: 550, proteins: "35g", fats: "22g", carbs: "40g" },
+        ];
+
+        const QUOTES = [
+            "Discipline is choosing between what you want now and what you want most.",
+            "Your body is a reflection of your lifestyle.",
+            "Eat for the body you want, not the body you have."
+        ];
+
+        // --- STATE MANAGEMENT ---
+        let isDarkMode = false;
+        let menuTab = 'today';
+        let selectedDay = TODAY;
+        let checkedItems = {};
+        let streak = GOAL_DATA.currentStreak;
+        let dayCompleted = false;
+
+        // --- DOM ELEMENTS ---
+        const htmlElement = document.documentElement;
+        const themeBtn = document.getElementById('theme-btn');
+        const btnToday = document.getElementById('btn-today');
+        const btnWeekly = document.getElementById('btn-weekly');
+        const menuContent = document.getElementById('menu-content');
+        const actionPlanContent = document.getElementById('action-plan-content');
+        const statusContainer = document.getElementById('status-container');
+        const perfectDayBanner = document.getElementById('perfect-day-banner');
+        
+        // Goals Elements
+        const goalTitle = document.getElementById('goal-title');
+        const streakCounter = document.getElementById('streak-counter');
+        const flameIcon = document.getElementById('flame-icon');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const quoteText = document.getElementById('quote-text');
+
+        // --- EVENT HANDLERS ---
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                htmlElement.classList.add('dark');
+                themeBtn.innerHTML = '<i data-lucide="sun" class="w-[18px] h-[18px]"></i>';
+            } else {
+                htmlElement.classList.remove('dark');
+                themeBtn.innerHTML = '<i data-lucide="moon" class="w-[18px] h-[18px]"></i>';
+            }
+            lucide.createIcons();
+        }
+
+        function setMenuTab(tab) {
+            menuTab = tab;
+            renderMenu();
+        }
+
+        function toggleDay(day) {
+            selectedDay = selectedDay === day ? null : day;
+            renderMenu();
+        }
+
+        function toggleItem(id) {
+            checkedItems[id] = !checkedItems[id];
+            checkCompletion();
+            renderApp();
+        }
+
+        function checkCompletion() {
+            const allChecked = RECOMMENDATIONS.every(item => checkedItems[item.id]);
+            if (allChecked && !dayCompleted) {
+                dayCompleted = true;
+                streak += 1;
+            } else if (!allChecked && dayCompleted) {
+                dayCompleted = false;
+                streak -= 1;
+            }
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderGoals() {
+            goalTitle.innerHTML = `<i data-lucide="target" class="mr-2 text-emerald-400 w-6 h-6"></i> ${GOAL_DATA.title}`;
+            streakCounter.innerText = `${streak} Day Streak`;
+            progressText.innerText = `${GOAL_DATA.daysCompleted} / ${GOAL_DATA.totalDays} Days`;
+            
+            const progressPercentage = (GOAL_DATA.daysCompleted / GOAL_DATA.totalDays) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+
+            if (dayCompleted) {
+                flameIcon.className = "mr-1.5 text-orange-400 animate-pulse w-4 h-4";
+            } else {
+                flameIcon.className = "mr-1.5 text-gray-400 w-4 h-4";
+            }
+        }
+
+        function renderMenuTabs() {
+            const activeClass = "flex-1 py-2 text-sm font-semibold rounded-lg transition-all bg-white shadow-sm text-gray-900 dark:bg-gray-700 dark:text-white";
+            const inactiveClass = "flex-1 py-2 text-sm font-semibold rounded-lg transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200";
+            
+            btnToday.className = menuTab === 'today' ? activeClass : inactiveClass;
+            btnWeekly.className = menuTab === 'weekly' ? activeClass : inactiveClass;
+        }
+
+        function renderMenu() {
+            renderMenuTabs();
+            
+            if (menuTab === 'today') {
+                let html = '<div class="space-y-4">';
+                Object.entries(WEEKLY_MENU[TODAY]).forEach(([meal, food]) => {
+                    html += `
+                        <div class="flex items-center p-3 rounded-xl border transition-colors border-gray-50 bg-gray-50/50 hover:bg-emerald-50/50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-emerald-900/20">
+                            <div class="p-2 rounded-lg mr-4 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
+                                <i data-lucide="clock" class="w-[18px] h-[18px]"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">${meal}</p>
+                                <p class="font-medium text-gray-900 dark:text-gray-200">${food}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                menuContent.innerHTML = html;
+            } else {
+                let html = '<div class="space-y-2">';
+                Object.keys(WEEKLY_MENU).forEach(day => {
+                    const isSelected = selectedDay === day;
+                    const btnClass = isSelected 
+                        ? 'w-full flex items-center justify-between p-4 transition-colors bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                        : 'w-full flex items-center justify-between p-4 transition-colors hover:bg-gray-50 text-gray-700 dark:hover:bg-gray-700 dark:text-gray-300';
+                    const rotateClass = isSelected ? 'rotate-90' : '';
+                    
+                    html += `
+                        <div class="border rounded-xl overflow-hidden border-gray-100 dark:border-gray-700">
+                            <button onclick="toggleDay('${day}')" class="${btnClass}">
+                                <span class="font-semibold">${day}</span>
+                                <i data-lucide="chevron-right" class="w-[18px] h-[18px] transition-transform ${rotateClass}"></i>
+                            </button>
+                    `;
+                    
+                    if (isSelected) {
+                        html += `<div class="p-4 border-t space-y-3 bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700">`;
+                        Object.entries(WEEKLY_MENU[day]).forEach(([meal, food]) => {
+                            html += `
+                                <div class="flex justify-between text-sm">
+                                    <span class="w-20 text-gray-500 dark:text-gray-400">${meal}</span>
+                                    <span class="font-medium text-right text-gray-900 dark:text-gray-200">${food}</span>
+                                </div>
+                            `;
+                        });
+                        html += `</div>`;
+                    }
+                    html += `</div>`;
+                });
+                html += '</div>';
+                menuContent.innerHTML = html;
+            }
+            lucide.createIcons();
+        }
+
+        function renderActionPlan() {
+            // Update Banner & Status Badge
+            if (dayCompleted) {
+                perfectDayBanner.classList.remove('hidden');
+                statusContainer.innerHTML = `
+                    <span class="text-xs font-bold px-3 py-1 rounded-full flex items-center bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1"></i> Perfect Day
+                    </span>
+                `;
+            } else {
+                perfectDayBanner.classList.add('hidden');
+                statusContainer.innerHTML = `
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+                        In Progress
+                    </span>
+                `;
+            }
+
+            // Render List Items
+            let html = '';
+            RECOMMENDATIONS.forEach(rec => {
+                const isChecked = checkedItems[rec.id] || false;
+                
+                const containerClass = isChecked 
+                    ? 'p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center group border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/20 hover:shadow-md'
+                    : 'p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center group border-gray-100 bg-white hover:border-emerald-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-emerald-800 hover:shadow-md';
+                
+                const titleClass = isChecked 
+                    ? 'font-semibold text-lg transition-colors text-gray-500 line-through'
+                    : 'font-semibold text-lg transition-colors text-gray-900 dark:text-gray-200';
+
+                html += `
+                    <div onclick="toggleItem(${rec.id})" class="${containerClass}">
+                        <div class="mr-4">
+                            ${isChecked 
+                                ? '<i data-lucide="check-circle-2" class="text-emerald-500 w-8 h-8 transition-transform transform scale-110"></i>' 
+                                : '<i data-lucide="circle" class="w-8 h-8 transition-colors text-gray-300 group-hover:text-emerald-200 dark:text-gray-600 dark:group-hover:text-emerald-700"></i>'
+                            }
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="${titleClass}">${rec.item}</p>
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                    ${rec.meal}
+                                </span>
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <span class="text-xs px-2 py-1 rounded font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                    ${rec.baseQuantity}
+                                </span>
+                                <span class="text-xs px-2 py-1 rounded font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                                    ${rec.calories} kcal
+                                </span>
+                                <span class="text-xs px-2 py-1 rounded font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                                    ${rec.proteins} Protein
+                                </span>
+                                <span class="text-xs px-2 py-1 rounded font-medium bg-yellow-50 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400">
+                                    ${rec.fats} Fat
+                                </span>
+                                <span class="text-xs px-2 py-1 rounded font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400">
+                                    ${rec.carbs} Carbs
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            actionPlanContent.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            quoteText.innerText = `"${QUOTES[0]}"`;
+            renderApp();
+        }
+
+        function renderApp() {
+            renderGoals();
+            renderMenu();
+            renderActionPlan();
+        }
+
+        // Start Application
+        init();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MenuMode {
+  REGULAR
+  FEAST
+}
+
+enum MealSlot {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACKS
+}
+
+enum MessHall {
+  GRACE
+  PROODLE
+  RASSENCE
+  FUSION
+}
+
+enum MessType {
+  VEG
+  NON_VEG
+  SPECIAL_MESS
+}
+
+enum GoalType {
+  NEUTRAL
+  WEIGHT_GAIN
+  WEIGHT_LOSS
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+model MenuItem {
+  id          Int       @id @default(autoincrement())
+  dayLabel    String
+  mealSlot    MealSlot
+  title       String
+  description String
+  calories    Int
+  protein     Int
+  carbs       Int
+  fats        Int
+  vegetarian  Boolean   @default(false)
+  spicy       Boolean   @default(false)
+  available   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  ratings     Rating[]
+}
+
+model Preference {
+  id           Int       @id @default(autoincrement())
+  studentName  String
+  menuMode     MenuMode
+  favorites    String
+  notes        String?
+  createdAt    DateTime  @default(now())
+}
+
+model Rating {
+  id          Int       @id @default(autoincrement())
+  studentName String
+  stars       Int
+  feedback    String?
+  menuItemId  Int
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+model StudentAccount {
+  id                 Int       @id @default(autoincrement())
+  registrationNumber String    @unique
+  passwordHash       String
+  messHall           MessHall
+  messType           MessType
+  
+  // Biometric data
+  age                Int
+  weight             Float     // in kg
+  height             Float     // in cm
+  gender             Gender
+  activityLevel      ActivityLevel @default(MODERATE)
+  
+  // Fitness goal (auto-calculated from biometrics, user-editable)
+  currentGoal        GoalType  @default(NEUTRAL)
+  dailyCalorieTarget Int      @default(2000)
+  
+  // Metadata
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+model AdminSettings {
+  id                 String    @id @default("global")
+  isPreferenceOpen   Boolean   @default(false)
+  updatedAt          DateTime  @updatedAt
+}
