@@ -69,6 +69,29 @@ function inferSpicy(itemName: string) {
   return /gravy|chettinad|chutney|rasam|biryani|chaat|korma|bhurji|pickle|podi|sambar|dal/i.test(itemName);
 }
 
+function getPlannedTitlesForDay(dayLabel: string, menuMode: MenuMode) {
+  const dayKey = dayLabel.toLowerCase() as keyof typeof WEEKLY_MENU;
+  const dayMenu = WEEKLY_MENU[dayKey];
+  if (!dayMenu) {
+    return null;
+  }
+
+  const useFeastMenu = menuMode === MenuMode.FEAST;
+  const plan: Partial<Record<MealSlot, Set<string>>> = {};
+
+  for (const mealKey of Object.keys(mealSlotMap) as Array<keyof typeof mealSlotMap>) {
+    const slot = mealSlotMap[mealKey] as MealSlot;
+    const itemIds = useFeastMenu ? dayMenu[mealKey].feast_menu : dayMenu[mealKey].regular_menu;
+    plan[slot] = new Set(
+      itemIds
+        .map((id) => MENU_ITEMS[id as keyof typeof MENU_ITEMS]?.name)
+        .filter((name): name is string => Boolean(name))
+    );
+  }
+
+  return plan;
+}
+
 function buildSeedMenuItems(): Prisma.MenuItemCreateManyInput[] {
   const rows: Prisma.MenuItemCreateManyInput[] = [];
 
@@ -243,6 +266,20 @@ export async function getDashboardData(): Promise<DashboardData> {
         },
         orderBy: [{ mealSlot: 'asc' }, { id: 'asc' }]
       });
+    }
+  }
+
+  const selectedMode = preferences[0]?.menuMode ?? MenuMode.REGULAR;
+  const plannedTitles = getPlannedTitlesForDay(menuItems[0]?.dayLabel ?? todayDayLabel, selectedMode);
+
+  if (plannedTitles) {
+    const filtered = menuItems.filter((item) => {
+      const titles = plannedTitles[item.mealSlot];
+      return titles ? titles.has(item.title) : true;
+    });
+
+    if (filtered.length > 0) {
+      menuItems = filtered;
     }
   }
 
